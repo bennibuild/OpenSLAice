@@ -465,7 +465,10 @@ class Stl:
 
             # If using anti-alias threshold <255, map 255->min_aa
             if 0 < min_aa < 255:
-                mask = np.where(mask == burn_value, min_aa, 0).astype(np.uint8)
+                mask = np.where(
+                    (mask < min_aa) & (mask < min_aa / 2), 0,
+                    np.where((mask < min_aa) & (mask >= min_aa / 2), min_aa, mask)
+                ).astype(np.uint8)
 
             # The polygon areas are now white (min_aa or 255), background is black
             return Image.fromarray(mask, mode='L')
@@ -489,18 +492,6 @@ class Stl:
             except Exception as e:
                 print(f"[Layer {i}] Rasterization error: {e}")
                 return False
-           # img_debugging = img.convert("RGBA")
-           # datas = img_debugging.getdata()
-           # newData = []
-           # for item in datas:
-           #     # If pixel is black, make it transparent
-           #     if item[0] == 0:
-           #         newData.append((255, 255, 255, 0))
-           #     else:
-           #         newData.append((0, 255, 255, 155))
-           # img_debugging.putdata(newData)
-           # img_debugging = img_debugging.transpose(Image.FLIP_LEFT_RIGHT)
-           # img_debugging.save(f"/home/benni/Documents/Repos/MF-SLA-Slicer/src/slicer/build/debug_layer_{i}.png", "PNG")  # Save debug image
             self.layers_image.append(img)
 
         return True
