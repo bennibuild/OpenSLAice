@@ -42,7 +42,7 @@ class ExposureSettings:
     T_c : float
         the time critical in sec
     overlap : float
-        the overlap between layers in % (0.0 - 1.0)
+        the overlap in mm, which is added to the layer height for the exposure time calculation
     """
     light_off_delay: float
     bottom_layers: int
@@ -102,8 +102,6 @@ class SpecialSettings:
         the print time compensation in seconds
     shrinkage_compensation : float
         the shrinkage compensation in percent
-    use_indi_layer_para : bool
-        if individual layer parameters are used
     intelli_mode : bool
         if intelli mode is enabled
     """
@@ -142,8 +140,8 @@ class Resin:
     def get_exp_time(self, layer_index: int, layer_height: float) -> float:
         """
         Calculate the exposure time based on the layer height.
-        The used formula is $z_p = h_a \\ln{\\frac{t_p}{T_c}}$ descriping the polymerization depth.
-        The exposure time is calculated as $t_p = T_c \\exp{\\frac{z_p \cdot (1 + overlap)}{h_a}}$.
+        The polymerization depth formula is: z_p = h_a × ln(t_p/T_c)
+        The exposure time is calculated as: t_p = T_c × exp(z_p × (1 + overlap)/h_a)
 
         Parameters
         ----------
@@ -160,7 +158,7 @@ class Resin:
         if layer_index < self.exposure_settings.bottom_layers:
             return self.exposure_settings.bottom_exp_time
 
-        z_p = (layer_height + self.exposure_settings.overlap) * 1000   # convert mm to um + overlap
+        z_p = (layer_height + self.exposure_settings.overlap) * 1000   # + overlap -> convert mm to um 
         calc_exp_time = self.exposure_settings.T_c * np.exp(z_p / self.exposure_settings.h_a)
 
         if layer_index < self.exposure_settings.bottom_layers + self.exposure_settings.transition_layers:
@@ -171,6 +169,23 @@ class Resin:
     
 
     def get_layer_time(self, layer_index: int, layer_height: float) -> float:
+        """
+        Calculate the total time for a layer including lift, exposure, and light off delay.
+        The total time is calculated as:
+        total_time = lift_up_time + lift_down_time + exposure_time + light_off_delay
+
+        Parameters
+        ----------
+        layer_index : int
+            The index of the layer.
+        layer_height : float
+            The height of the layer in mm.
+
+        Returns
+        -------
+        float
+            The total time for the layer in seconds.
+        """
         n_move_up_time = self.movement_settings.normal_lift_height / self.movement_settings.normal_lift_speed if layer_index > self.exposure_settings.bottom_layers else self.movement_settings.bottom_lift_height / self.movement_settings.bottom_lift_speed
         n_move_down_time = self.movement_settings.normal_lift_height / self.movement_settings.normal_retract_speed if layer_index > self.exposure_settings.bottom_layers else self.movement_settings.bottom_lift_height / self.movement_settings.bottom_retract_speed
         return n_move_up_time + n_move_down_time + self.get_exp_time(layer_index, layer_height) + self.exposure_settings.light_off_delay

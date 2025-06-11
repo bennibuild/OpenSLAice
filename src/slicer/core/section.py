@@ -12,7 +12,20 @@ class Feature(Enum):
 
 
 class Section:
+    """
+    Represents a section of a 1D space defined by a start and end point.
+    """
     def __init__(self, start: float, end: float):
+        """
+        Initializes a Section with start and end points.
+
+        Parameters
+        ----------
+        start : float
+            The starting point of the section.
+        end : float
+            The ending point of the section.
+        """
         if start > end:
             t = start
             start = end
@@ -21,14 +34,42 @@ class Section:
         self.end = end
     
     def includes_point(self, point: float) -> bool:
+        """
+        Checks if a point is within the section (borders inclusive).
+
+        Parameters
+        ----------
+        point : float
+            The point to check.
+
+        Returns
+        -------
+        bool
+            True if the point is within the section, False otherwise.
+        """
         return self.start <= point <= self.end
 
     def overlaps_with(self, other: "Section") -> bool:
-        """same borders does not result in true"""
+        """
+        Checks if this section overlaps with another section (borders exclusive).
+
+        Parameters
+        ----------
+        other : Section
+            The other section to check for overlap.
+
+        Returns
+        -------
+        bool
+            True if the sections overlap, False otherwise.
+        """
         return self.start < other.end and self.end > other.start
-    
+
     @property
     def height(self):
+        """
+        Returns the height of the section, which is the difference between end and start.
+        """
         return self.end - self.start
 
     def __repr__(self):
@@ -42,12 +83,23 @@ class Section:
 
 
 class AngleSection(Section):
+    """
+    Represents a section of a 1D space with an associated angle and optional feature flag indicating if it is part of a microfluidic structure.
+    """
     def __init__(self, start: float, end: float, angle: float, part_of_mf: bool = False):
         super().__init__(start, end)
         self.angle = angle
         self.part_of_mf = part_of_mf
 
     def set_angle(self, new_angle: float):
+        """
+        Sets a new angle for the section.
+
+        Parameters
+        ----------
+        new_angle : float
+            The new angle to set.
+        """
         self.angle = new_angle
 
     def __eq__(self, other):
@@ -61,6 +113,9 @@ class AngleSection(Section):
 
 
 class AngleSectionFragment(AngleSection):
+    """
+    Represents a fragment of an angle section with an associated face index.
+    """
     def __init__(self, start: float, end: float, angle: float, face_index: int):
         super().__init__(start, end, angle, False)
         self.face_index = face_index
@@ -76,20 +131,61 @@ class AngleSectionFragment(AngleSection):
 
 
 class FeatureSection(AngleSection):
+    """
+    Represents a section of a 1D space with an associated angle and a set of features.
+    """
     def __init__(self, start: float, end: float, angle: float, features: List[Feature]):
         super().__init__(start, end, angle)
         self.features: Set[Feature] = set(features)
 
     def add_feature(self, feature: Feature):
+        """
+        Adds a feature to the section.
+
+        Parameters
+        ----------
+        feature : Feature
+            The feature to add.
+        """
         self.features.add(feature)
 
     @classmethod
     def from_boundaries(cls, boundaries: List[float]) -> List["FeatureSection"]:
+        """
+        Creates feature sections from a list of boundary values.
+
+        Parameters
+        ----------
+        boundaries : List[float]
+            A list of boundary values.
+
+        Returns
+        -------
+        List[FeatureSection]
+            A list of feature sections created from the boundaries.
+        """
         sorted_bounds = sorted(boundaries)
         return [cls(start=sorted_bounds[i], end=sorted_bounds[i+1], angle=0.0, features=[]) for i in range(len(sorted_bounds) - 1)]
 
 
     def get_intersection_levels(self, min_lh: float, max_lh: float, z_res: float) -> set[float]:
+        """
+        Computes the intersection levels for the section based on the given layer height constraints.
+
+        Parameters
+        ----------
+        min_lh : float
+            The minimum layer height.
+        max_lh : float
+            The maximum layer height.
+        z_res : float
+            The Z-axis resolution.
+
+        Returns
+        -------
+        set[float]
+            A set of intersection levels for the section.
+        """
         intersection_levels = set()
         print("==>", self)
         # input: 

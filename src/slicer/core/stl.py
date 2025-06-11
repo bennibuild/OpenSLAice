@@ -3,7 +3,7 @@ import trimesh
 from affine import Affine  #type: ignore
 from PIL import Image
 from rasterio.features import rasterize  #type: ignore
-from shapely.geometry import mapping
+from shapely.geometry import mapping #type: ignore
 import math
 from scipy.spatial import cKDTree # type: ignore
 from joblib import Parallel, delayed  # type: ignore
@@ -219,7 +219,15 @@ class Stl:
 
 
     def _compute_mf_section(self) -> Section:
-        # 1) find the z cords of the microfluidic section
+        """
+        Compute the microfluidic section based on the opposing faces of the mesh.
+        The section is defined by the minimum and maximum z values of the opposing faces.
+
+        Returns
+        -------
+        Section
+            The microfluidic section defined by the minimum and maximum z values.
+        """
         z_res = self._slicer.printer.settings.z_resolution
         if self._opposing_faces is None:
             print("No opposing faces found, returning empty section at (0, 0)")
@@ -232,6 +240,9 @@ class Stl:
 
 
     def _recalc_dependend_parameter(self):
+        """
+        Recalculate all parameters that depend on the mesh orientation, position, or slicing.
+        """
         self.layers_path_2d = None
         self.layers_image = None
         self._angle_sections = None
@@ -366,6 +377,19 @@ class Stl:
     # pub class methods
 
     def find_dominant_angle(self, section: Section) -> float:
+        """
+        Find the dominant angle for a given section of the mesh. 
+
+        Arguments
+        ----------
+        section : Section
+            The section of the mesh to find the dominant angle for.
+
+        Returns
+        -------
+        float
+            The dominant angle for the section.
+        """
         z_res = self._slicer.printer.settings.z_resolution
         active_angles: list[AngleSection] = []
         active_angles_mf: list[AngleSection] = []
@@ -394,6 +418,11 @@ class Stl:
         """
         Prepare the mesh for arranging in the xy plane. The mesh is rotated so that the width is greater than the depth.
         Returns the width and depth of the mesh in pixels.
+
+        Returns
+        -------
+        tuple[int, int]
+            The width and depth of the mesh in pixels.
         """
         bounds = self._mesh.bounds
         width = math.ceil((bounds[1][0] - bounds[0][0]) / self._slicer.printer.settings.pixel_size) + 2
@@ -408,9 +437,14 @@ class Stl:
         """
         Automatically orient the mesh based on the dominant normal vector of the mesh. It may flip the dominant normal vector
         if the majority of the face normals are aligned with the flipped vector so if more details are on the bottom side of the mesh.
+
+        Returns
+        -------
+        bool
+            True if the orientation was successful, False otherwise.
         """
         print("Auto-orienting the mesh...")
-        # set the orientation of the mesh to the normal vector 
+        # set the orientation of the mesh to the normal vector
         self.set_orientation(self._mf_plane)
         return True
 
@@ -424,6 +458,11 @@ class Stl:
         ----------
         z_levels : list[float]
             The z levels at which to slice the mesh.
+
+        Returns
+        -------
+        bool
+            True if the slicing was successful, False otherwise.
         """
         OFFSET = 0.0001 # to avoid top layers from being printed
         z_levels = [z - OFFSET for z in z_levels if self.get_z_min() < z <= self.get_z_max()] # clamp z levels to bounds excluding z_min (first layer at z_min + layer_height)
@@ -436,6 +475,16 @@ class Stl:
         """
         Rasterize each 2D path layer into a mask image where the polygon area is white (255)
         and the background is black (0), with optional anti-alias thresholding.
+
+        Parameters
+        ----------
+        min_aa : int
+            The minimum anti-aliasing value to use.
+
+        Returns
+        -------
+        bool
+            True if the rasterization was successful, False otherwise.
         """
         def _rasterize_layer(path_2d, pixel_size: float, min_aa: int, span_xy: tuple[float, float]) -> Image.Image:
             # Compute grid resolution in pixels
@@ -502,8 +551,21 @@ def _compute_angle_sections(mesh: trimesh.Trimesh, z_res: float, mf_face_ids: li
     Compute angle sections for faces in the mesh. Each section is defined by a starting z value,
     an angle, and the maximum z value of the face. The sections are extended by performing a DFS
     to find connected components of faces with similar normals.
-    Returns: orderd list of AngleSections
-    """  
+    
+    Parameters
+    ----------
+    mesh : trimesh.Trimesh
+        The mesh to compute angle sections for.
+    z_res : float
+        The z resolution to use for snapping z values.
+    mf_face_ids : list[int] | None
+        The face indices of the microfluidic structure, if any.
+
+    Returns
+    -------
+    list[AngleSection]
+        The computed angle sections.
+    """
     # helper functions
     def _build_face_neighbors(mesh: trimesh.Trimesh) -> dict:
         """Build a dictionary mapping each face index to its adjacent face indices."""

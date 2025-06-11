@@ -6,7 +6,10 @@ from src.slicer.core.resin import Resin
 
 
 class FileType(Protocol):
-    """Protocol defining the interface for file type classes"""
+    """
+    A protocol for file types used in the slicer.
+    This protocol defines the structure that all file types must adhere to.
+    """
     type_name: str
     
     @abstractmethod
@@ -16,14 +19,22 @@ class FileType(Protocol):
         """
         Initialize file type with required parameters.
         
-        Args:
-            file_name: Name of the file
-            printer: Printer object
-            resin: Resin object
-            layers: List of image layers
-            intersection_levels: List of intersection levels
-            layer_heights: List of layer heights
-            volume: Volume of the print
+        Parameters
+        ----------
+        file_name: str
+            Name of the file to be processed
+        printer: Printer
+            Printer object containing printer settings
+        resin: Resin
+            Resin object containing resin properties
+        layers: List[Image]
+            List of image layers
+        intersection_levels: List[float]
+            List of intersection levels
+        layer_heights: List[float]
+            List of layer heights
+        volume: float
+            Volume of the print
         """
         pass
 
@@ -32,11 +43,15 @@ class FileType(Protocol):
         """
         Save file to the specified path.
         
-        Args:
-            save_path: Path where file should be saved
-            
-        Returns:
-            bool: True if save successful, False otherwise
+        Parameters
+        ----------
+        save_path : str
+            The path where the file should be saved.
+
+        Returns
+        -------
+        bool
+            True if the save was successful, False otherwise.
         """
         pass
 

@@ -33,6 +33,18 @@ class Slicer:
         Printer object
     resin: Resin
         Resin object
+    stls: list[Stl]
+        List of Stl objects to be sliced
+    layer_height_method: ParameterMode
+        How the layer heights are computed (AUTO or MANUAL)
+    forced_layer_height: float
+        The layer height in mm to be used if layer_height_method is MANUAL
+    feature_sections: list[FeatureSection]
+        List of FeatureSection objects defining the sections of the print
+    intersection_levels: list[float]
+        List of intersection levels (z-positions in mm) where the stls are sliced
+    layers_image: list[Image.Image]
+        List of PIL Image objects representing the rasterized layers of the print
     """
     
     def __init__(self, printer: Printer, resin: Resin):
@@ -92,6 +104,9 @@ class Slicer:
 # slicing methods
 
     def auto_orientation(self) -> bool:
+        """
+        Automatically orient all stls to the best orientation for printing.
+        """
         for stl in self.stls:
             stl.auto_orientation()
         return True
@@ -107,8 +122,12 @@ class Slicer:
         ----------
         distance : float
             The distance [mm] between the stls in the xy plane.
+        Returns
+        -------
+        bool
+            True if the arrangement was successful, False otherwise.
         """
-        # Get printer dimensions
+        # get printer dimensions
         printer_width, printer_depth = self.printer.settings.screen_resolution
         distance = math.ceil(distance / self.printer.settings.pixel_size)  # Convert to pixels
 
@@ -121,32 +140,32 @@ class Slicer:
         if n_stls == 0:
             return False
 
-        # Extract the optimized dimensions
+        # extract the optimized dimensions  
         max_width = max(box[0] for box in bounding_boxes)
         max_depth = max(box[1] for box in bounding_boxes)
 
-        # Calculate desired grid dimensions by approximating the printer aspect ratio
+        # calculate desired grid dimensions by approximating the printer aspect ratio   
         printer_aspect = printer_width / printer_depth
         columns = max(1, round(math.sqrt(n_stls * printer_aspect)))
         rows = math.ceil(n_stls / columns)
 
-        # Compute total area required for the grid (including margins)
+        # compute total area required for the grid (including margins)
         grid_cell_width = max_width
         grid_cell_depth = max_depth
         total_width = columns * grid_cell_width + (columns + 1) * distance
         total_depth = rows * grid_cell_depth + (rows + 1) * distance
 
-        # Check if the grid fits within the printer's area
-        if total_width > printer_width or total_depth > printer_depth:
+        # check if the grid fits within the printer's area
+        if total_width > printer_width or total_depth > printer_depth:   
             return False
 
-        # Center the grid within the printer's area
-        x_offset = math.ceil((printer_width - total_width) / 2.0)
+        # center the grid within the printer's area
+        x_offset = math.ceil((printer_width - total_width) / 2.0)   
         y_offset = math.ceil((printer_depth - total_depth) / 2.0)
 
-        # Arrange the STLs
+        # arrange the STLs  
         for i, stl in enumerate(self.stls):
-            col = i % columns
+            col = i % columns 
             row = i // columns
             x = x_offset + distance + col * (grid_cell_width + distance)
             y = y_offset + distance + row * (grid_cell_depth + distance)
@@ -155,7 +174,33 @@ class Slicer:
 
 
     def _compute_feature_sections(self) -> bool:
+        """
+        Compute the feature sections based on the z-levels and top/bottom bounds of the stls.
+        It will also ensure that the z-levels are spaced according to the minimum layer height and the printer's z-resolution.
+        """
         def enforce_min_distance(numbers: list[float], start: float, end: float, min_d: float, z_res: float) -> list[float]:
+            """
+            Ensure that the numbers are spaced at least min_d apart, starting from start and ending at end.
+            If the numbers are too close together, they will be adjusted to ensure the minimum distance (if possible).
+
+            Arguments:
+            ----------
+            numbers : list[float]
+                The list of numbers to adjust.
+            start : float
+                The start of the range.
+            end : float
+                The end of the range.
+            min_d : float
+                The minimum distance between numbers.
+            z_res : float
+                The z-resolution to use for rounding.
+
+            Returns
+            -------
+            list[float]
+                The adjusted list of numbers.
+            """
             # prepare input data: truncate numbers to the range [start, end] & ensure start and end are present
             numbers = [num for num in numbers if start <= num <= end]
             if start not in numbers:
@@ -252,6 +297,13 @@ class Slicer:
 
 
     def compute_intersection_levels(self) -> list[float]:
+        """
+        Compute the intersection levels for all stls based on the layer height method.
+        If the layer height method is set to MANUAL, it will use the forced layer height.
+        If the layer height method is set to AUTO, it will compute the intersection levels based on the feature sections.
+        Returns:
+            list[float]: A list of intersection levels (z-positions in mm) where the stls are sliced.
+        """
         z_res = self.printer.settings.z_resolution
         min_lh = self.printer.min_layer_height
         max_lh = self.printer.max_layer_height
@@ -279,6 +331,9 @@ class Slicer:
 
 
     def slice_all(self) -> bool:
+        """
+        Slice all stls based on the intersection levels.
+        """
         if not self.intersection_levels:
             self.compute_intersection_levels()
         for stl in self.stls:
@@ -287,6 +342,9 @@ class Slicer:
 
 
     def rasterize(self, min_aa: int) -> bool:
+        """
+        Rasterize all stls for each intersection level.
+        """
         for i, stl in enumerate(self.stls):
             print(f"Rasterizing stl-{i} ...")
             stl.rasterize(min_aa)
