@@ -2,19 +2,19 @@ from src.slicer.core.resin import Resin, ResinProperties, ExposureSettings, Move
 
 
 properties = ResinProperties(
-    viscosity=230,
+    viscosity=200,
     density=1.13,
     currency="EUR",
-    price=25.00
+    price=22.00
 )
 
 exposure_settings = ExposureSettings(
     light_off_delay=2,
     bottom_layers=1,
-    bottom_exp_time=30,
+    bottom_exp_time=40,
     transition_layers=3,
-    h_a=82.72,
-    T_c=0.756, # for anycubic mono 4 ultra (1938.24 μW/cm² at 400nm)
+    h_a=135.58,
+    T_c=3.524,  # for anycubic mono 4 ultra (1938.24 μW/cm² at 400nm)
     overlap=0.015 # mm
 )
 
@@ -38,8 +38,8 @@ special_settings = SpecialSettings(
     intelli_mode=True
 )
 
-anycubic_standard_clear = Resin(
-    name="Anycubic Standard Clear",
+elegoo_abs_like_clear = Resin(
+    name="Elegoo ABS-Like Clear",
     properties=properties,
     exposure_settings=exposure_settings,
     movement_settings=movement_settings,
@@ -47,4 +47,4 @@ anycubic_standard_clear = Resin(
 )
 
 
-ResinRegistry.register(anycubic_standard_clear)
+ResinRegistry.register(elegoo_abs_like_clear)

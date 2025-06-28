@@ -2,19 +2,19 @@ from src.slicer.core.resin import Resin, ResinProperties, ExposureSettings, Move
 
 
 properties = ResinProperties(
-    viscosity=230,
+    viscosity=650,
     density=1.13,
     currency="EUR",
-    price=25.00
+    price=34.00
 )
 
 exposure_settings = ExposureSettings(
     light_off_delay=2,
     bottom_layers=1,
-    bottom_exp_time=30,
+    bottom_exp_time=35,
     transition_layers=3,
-    h_a=82.72,
-    T_c=0.756, # for anycubic mono 4 ultra (1938.24 μW/cm² at 400nm)
+    h_a=119.69,
+    T_c=1.115,  # for anycubic mono 4 ultra (1938.24 μW/cm² at 400nm)
     overlap=0.015 # mm
 )
 
@@ -38,8 +38,8 @@ special_settings = SpecialSettings(
     intelli_mode=True
 )
 
-anycubic_standard_clear = Resin(
-    name="Anycubic Standard Clear",
+syiraya_tech_sculpt_clear = Resin(
+    name="Syiraya Tech Sculpt Clear",
     properties=properties,
     exposure_settings=exposure_settings,
     movement_settings=movement_settings,
@@ -47,4 +47,4 @@ anycubic_standard_clear = Resin(
 )
 
 
-ResinRegistry.register(anycubic_standard_clear)
+ResinRegistry.register(syiraya_tech_sculpt_clear)
