@@ -322,6 +322,15 @@ class Stl:
         self._stl_position = (x, y)
         return True
 
+    def set_position_mm(self, x: float, y: float) -> bool:
+        """
+        Set the position of the mesh in the xy plane in mm. The position is rounded to the nearest pixel.
+        """
+        pixel_size = self._slicer.printer.settings.pixel_size
+        x_px = round(x / pixel_size)
+        y_px = round(y / pixel_size)
+        return self.set_position(x_px, y_px)
+
     def get_position(self) -> tuple[int, int]:
         return self._stl_position
 
